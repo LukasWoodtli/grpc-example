@@ -4,7 +4,7 @@ import com.proto.greet.*;
 import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -16,9 +16,7 @@ public class GreetingClient {
     }
 
     public void run() {
-        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50052)
-                .usePlaintext() // disable SSL (use only for development!)
-                .build();
+        ManagedChannel channel = setupChannel();
 
         /* For SSL/TLS (custom CA root certificates):
         ManagedChannel channel = NettyChannelBuilder.forAddress("localhost", 50052)
@@ -51,7 +49,20 @@ public class GreetingClient {
         channel.shutdown();
     }
 
+    static ManagedChannel setupChannel() {
+        ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 50052)
+                .usePlaintext() // disable SSL (use only for development!)
+                .build();
+        return channel;
+    }
+
     private static void doUnaryRequest(ManagedChannel channel) {
+        String result = doUnaryRequestImpl(channel);
+
+        System.out.println(result);
+    }
+
+    static String doUnaryRequestImpl(ManagedChannel channel) {
         System.out.println("Creating stub");
         // create blocking greet service client
         GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
@@ -69,11 +80,15 @@ public class GreetingClient {
         GreetResponse greetResponse = greetClient.greet(greetRequest);
 
         // do something with response
-        System.out.println(greetResponse.getResult());
+        String result = greetResponse.getResult();
+        return result;
     }
 
-    private static void doStreamingServerRequest(ManagedChannel channel) {
+    static List<String> doStreamingServerRequest(ManagedChannel channel) {
         System.out.println("Creating stub");
+
+        List<String> result = new ArrayList<>();
+
         // create blocking greet service client
         GreetServiceGrpc.GreetServiceBlockingStub greetClient = GreetServiceGrpc.newBlockingStub(channel);
 
@@ -83,13 +98,18 @@ public class GreetingClient {
         // stream the responses
         greetClient.greetManyTimes(greetManyTimesRequest)
                 .forEachRemaining(response -> {
+                    result.add(response.getResult());
                     System.out.println(response.getResult());
                 });
+
+        return result;
     }
 
-    private static void doClientStreamingRequest(ManagedChannel channel) {
+    static String doClientStreamingRequest(ManagedChannel channel) {
         System.out.println("Creating async stub");
         GreetServiceGrpc.GreetServiceStub asyncClient = GreetServiceGrpc.newStub(channel);
+
+        final String[] result = new String[1];
 
         CountDownLatch latch = new CountDownLatch(1);
 
@@ -99,7 +119,8 @@ public class GreetingClient {
                 // get response from server
                 // inNext is going to be called only once
                 System.out.println("Received a response from the server");
-                System.out.println(value.getResult());
+                result[0] = value.getResult();
+                System.out.println(result[0]);
             }
 
             @Override
@@ -139,17 +160,22 @@ public class GreetingClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        return result[0];
     }
 
 
-    private void doBiDiStreamingRequest(ManagedChannel channel) {
+    static List<String> doBiDiStreamingRequest(ManagedChannel channel) {
         GreetServiceGrpc.GreetServiceStub asyncClient = GreetServiceGrpc.newStub(channel);
+
+        List<String> result = new ArrayList<>();
 
         CountDownLatch latch = new CountDownLatch(1);
 
         StreamObserver<GreetEveryoneRequest> requestStreamObserver = asyncClient.greetEveryone(new StreamObserver<GreetEveryoneResponse>() {
             @Override
             public void onNext(GreetEveryoneResponse value) {
+                result.add(value.getResult());
                 System.out.println("Response from server: " + value.getResult());
             }
 
@@ -186,29 +212,32 @@ public class GreetingClient {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+
+        return result;
     }
 
-    private void doErrorRequest(ManagedChannel channel) {
-        GreetServiceGrpc.GreetServiceBlockingStub blockingStub = GreetServiceGrpc.newBlockingStub(channel);
-
-        String firstName = "";
-
+    void doErrorRequest(ManagedChannel channel) {
         try {
-            Greeting greeting = Greeting.newBuilder().setFirstName(firstName).build();
-            blockingStub.greetWithError(GreetWithErrorRequest.newBuilder().setGreeting(greeting).build());
+            doErrorRequestImpl(channel);
         } catch (StatusRuntimeException e) {
             System.out.println("Got an error");
             e.printStackTrace();
         }
     }
 
-    private void doUnaryCallWithDeadline(ManagedChannel channel) {
-        GreetServiceGrpc.GreetServiceBlockingStub greetServiceBlockingStub = GreetServiceGrpc.newBlockingStub(channel);
+    static void doErrorRequestImpl(ManagedChannel channel) {
+        GreetServiceGrpc.GreetServiceBlockingStub blockingStub = GreetServiceGrpc.newBlockingStub(channel);
 
+        String firstName = "";
+        Greeting greeting = Greeting.newBuilder().setFirstName(firstName).build();
+        blockingStub.greetWithError(GreetWithErrorRequest.newBuilder().setGreeting(greeting).build());
+    }
+
+    private void doUnaryCallWithDeadline(ManagedChannel channel) {
         try {
-            callWithDeadline(greetServiceBlockingStub, 5000);
+            doUnaryCallWithDeadlineImpl(channel, 5000);
             Thread.sleep(1000);
-            callWithDeadline(greetServiceBlockingStub, 100);
+            doUnaryCallWithDeadlineImpl(channel, 100);
         }
         catch (StatusRuntimeException e) {
             if (e.getStatus() == Status.DEADLINE_EXCEEDED) {
@@ -221,7 +250,9 @@ public class GreetingClient {
         }
     }
 
-    private void callWithDeadline(GreetServiceGrpc.GreetServiceBlockingStub greetServiceBlockingStub, int deadline) {
+    static void doUnaryCallWithDeadlineImpl(ManagedChannel channel, int deadline) {
+        GreetServiceGrpc.GreetServiceBlockingStub greetServiceBlockingStub = GreetServiceGrpc.newBlockingStub(channel);
+
         System.out.println("Send request with " + deadline + " ms deadline");
         GreetWithDeadlineResponse response = greetServiceBlockingStub.withDeadline(Deadline.after(deadline, TimeUnit.MILLISECONDS))
                 .greetWithDeadline(GreetWithDeadlineRequest.newBuilder().setGreeting(Greeting.newBuilder().setFirstName("Lukas").build()).build());
