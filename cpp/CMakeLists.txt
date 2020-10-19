@@ -26,10 +26,9 @@ else()
 endif()
 
 
+set(GENERATED_FILES_DIR ${PROJECT_BINARY_DIR}/gen_grpc)
 function(generate_grpc_code proto_file generated_files_list)
-    #message(FATAL_ERROR ${generated_files_list})
     set(GRPC_FILES_DIR ${PROJECT_SOURCE_DIR}/../java/src/main/proto/greet/)
-    set(GENERATED_FILES_DIR ${PROJECT_BINARY_DIR}/gen_grpc)
     file(MAKE_DIRECTORY ${GENERATED_FILES_DIR})
 
     get_filename_component(GRPC_FILE_BASENAME ${proto_file} NAME_WE CACHE)
@@ -52,7 +51,6 @@ function(generate_grpc_code proto_file generated_files_list)
     set_source_files_properties(${GEN_GRPC_CODE} ${GEN_PROTOBUF_CODE} PROPERTIES GENERATED TRUE)
 
     set(${generated_files_list} ${${generated_files_list}} ${GEN_GRPC_CODE} ${GEN_PROTOBUF_CODE} PARENT_SCOPE)
-
 endfunction()
 
 
@@ -61,7 +59,10 @@ generate_grpc_code("greet.proto" generated_files)
 add_library(grpc_example_lib SHARED
     ${generated_files})
 
-target_include_directories(grpc_example_lib PRIVATE ${Protobuf_INCLUDE_DIRS})
+target_include_directories(grpc_example_lib PUBLIC ${GENERATED_FILES_DIR} ${Protobuf_INCLUDE_DIRS})
 
-target_link_libraries(grpc_example_lib PRIVATE ${Protobuf_LIBRARIES} ${GRPC_LIB})
+target_link_libraries(grpc_example_lib PUBLIC ${Protobuf_LIBRARIES} ${GRPC_LIB})
 
+
+
+add_subdirectory(src)
