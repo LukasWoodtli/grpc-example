@@ -22,7 +22,8 @@ if (APPLE)
     set(GRPC_LIB gRPC::grpc++)
 else()
     find_library(GRPC grpc REQUIRED)
-    set(GRPC_LIB ${GRPC})
+    find_library(GRPCPP grpc++ REQUIRED)
+    set(GRPC_LIB ${GRPC} ${GRPCPP})
 endif()
 
 

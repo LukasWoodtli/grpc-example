@@ -8,5 +8,4 @@ target_sources(greeting_server
             GreetServerImpl.cpp
             GreetServerImpl.h)
 
-target_include_directories(greeting_server PRIVATE ${GENERATED_FILES_DIR})
 target_link_libraries(greeting_server PRIVATE grpc_example_lib)
