@@ -18,4 +18,4 @@ RUN yum -y install \
     vim \
 && yum clean all
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/bin/bash", "-c"]
