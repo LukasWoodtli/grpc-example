@@ -13,7 +13,7 @@ RUN yum -y install \
     protobuf-devel \
     cmake \
     clang \
-    ninja \
+    ninja-build \
     java-11-openjdk \
     vim \
 && yum clean all
