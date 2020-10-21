@@ -13,9 +13,13 @@ RUN yum -y install \
     protobuf-devel \
     cmake \
     clang \
+    binutils \
     ninja-build \
     java-11-openjdk \
     vim \
+    golang \
+    less \
+    curl \
 && yum clean all
 
 ENTRYPOINT ["/bin/bash", "-c"]
