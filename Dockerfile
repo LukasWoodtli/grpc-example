@@ -20,6 +20,7 @@ RUN yum -y install \
     golang \
     less \
     curl \
+    git \
 && yum clean all
 
 ENTRYPOINT ["/bin/bash", "-c"]
