@@ -9,6 +9,4 @@ before_install:
 
 
 script:
-- docker run --rm -it -v $TRAVIS_BUILD_DIR:/grpc-example -w /grpc-example/java lukaswoodtli/grpc-example:latest ./gradlew
-- docker run --rm -it -v $TRAVIS_BUILD_DIR:/grpc-example -w /grpc-example/cpp lukaswoodtli/grpc-example:latest "cmake -S . -B build && cmake --build build"
-- docker run --rm -it -v $TRAVIS_BUILD_DIR:/grpc-example -w /grpc-example/go-grpc-gateway lukaswoodtli/grpc-example:latest make
+- docker run --rm -it -v $TRAVIS_BUILD_DIR:/grpc-example -w /grpc-example lukaswoodtli/grpc-example:latest ./build_and_run.sh
