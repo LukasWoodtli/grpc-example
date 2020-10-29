@@ -1,5 +1,5 @@
 FROM fedora:33
-MAINTAINER LukasWoodtli <woodtli.lukas@gmail.com>
+LABEL MAINTAINER LukasWoodtli <woodtli.lukas@gmail.com>
 
 RUN yum -y update && yum clean all
 RUN yum -y install \

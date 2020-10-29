@@ -5,6 +5,8 @@ package greet;
 option java_package = "com.proto.greet";
 option java_multiple_files = true;
 
+option go_package = ".;gateway";
+
 import "google/api/annotations.proto";
 
 
@@ -65,7 +67,7 @@ service GreetService {
   // Unary
   rpc Greet(GreetRequest) returns (GreetResponse) {
       option (google.api.http) = {
-          get: "/v1/greet/{first_name}"
+          get: "/v1/greet"
       };
   }
 
