@@ -1,0 +1,61 @@
+admin:
+  access_log_path: /tmp/admin_access.log
+  address:
+    socket_address:
+      address: 0.0.0.0
+      port_value: 9901         #1
+static_resources:
+  listeners:
+  - name: main-listener
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 50000      #2
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        config:
+          stat_prefix: ingress_http
+          codec_type: auto
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" , grpc: {}}  # 3a grpc:{} means that requests are only forwarded if they are found in the grpc service definition, returning 404 for others
+                route:
+                  cluster: grpc-backend-services
+                  max_grpc_timeout: 60s   #3b
+              cors:
+                allow_origin_string_match:
+                - prefix: "*"
+                allow_methods: GET, PUT, DELETE, POST, OPTIONS
+                allow_headers: keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,x-grpc-web,grpc-timeout
+                max_age: "1728000"
+                expose_headers: grpc-status,grpc-message
+          http_filters:
+          - name: envoy.filters.http.grpc_json_transcoder
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+              proto_descriptor: "/data/greet.pb"             #4
+              services: ["greet.GreetService"]                        #5
+              print_options:
+                add_whitespace: true
+                always_print_primitive_fields: true
+                always_print_enums_as_ints: false
+                preserve_proto_field_names: false                                     #6
+          - name: envoy.filters.http.cors
+          - name: envoy.filters.http.router
+
+  clusters:
+  - name: grpc-backend-services                  #7
+    connect_timeout: 1.25s
+    type: logical_dns
+    lb_policy: round_robin
+    dns_lookup_family: V4_ONLY
+    http2_protocol_options: {}
+    hosts:
+    - socket_address:
+        address: localhost                       #8
+        port_value: 50052
